@@ -1,0 +1,146 @@
+<?php
+
+namespace Omnipay\Enotio\Message;
+
+use Omnipay\Common\Message\AbstractRequest;
+use Omnipay\Common\Message\NotificationInterface;
+use Omnipay\Enotio\Traits\Parametrable;
+
+class NotificationRequest extends AbstractRequest implements NotificationInterface
+{
+    use Parametrable;
+
+    protected $data;
+
+    /**
+     * @inheritDoc
+     */
+    public function getData()
+    {
+        if (isset($this->data)) {
+            return $this->data;
+        }
+
+        return $this->data = $this->httpRequest->request->all();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getTransactionReference()
+    {
+        return $this->getIntId();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getTransactionStatus(): string
+    {
+        return self::STATUS_COMPLETED;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getMessage(): string
+    {
+        return '';
+    }
+
+    public function isValid(): bool
+    {
+        return $this->getSign2() === $this->buildSignature();
+    }
+
+    private function buildSignature()
+    {
+        $params = [
+            $this->getDataItem('merchant'),
+            $this->getDataItem('amount'),
+            $this->getSecretKey2(),
+            $this->getDataItem('merchant_id'),
+        ];
+
+        return hash('sha1', implode("&", $params));
+    }
+
+    public function getMerchantId()
+    {
+        return $this->getDataItem('merchant');
+    }
+
+    public function getOriginalAmount()
+    {
+        return $this->getDataItem('amount');
+    }
+
+    public function getAmount(): string
+    {
+        return $this->formatCurrency($this->getDataItem('amount', 0));
+    }
+
+    public function getCredited(): string
+    {
+        return $this->formatCurrency($this->getDataItem('credited', 0));
+    }
+
+    // ID операции в вашей системе
+    public function getTransactionId()
+    {
+        return $this->getDataItem('merchant_id');
+    }
+
+    // ID операции в enotio системе
+    public function getIntId()
+    {
+        return $this->getDataItem('intid');
+    }
+
+    public function getSign()
+    {
+        return $this->getDataItem('sign');
+    }
+
+    public function getSign2()
+    {
+        return $this->getDataItem('sign_2');
+    }
+
+    public function getCurrency()
+    {
+        return $this->getDataItem('currency');
+    }
+
+    public function getPayerDetails()
+    {
+        return $this->getDataItem('payer_details');
+    }
+
+    public function getCommission()
+    {
+        return $this->getDataItem('commission');
+    }
+
+    public function getCommissionPay()
+    {
+        return $this->getDataItem('commission_pay');
+    }
+
+    public function getCustomField()
+    {
+        return $this->getDataItem('custom_field');
+    }
+
+    protected function getDataItem($name, $default = null)
+    {
+        $data = $this->getData();
+
+        return $data[$name] ?? $default;
+    }
+
+    public function sendData($data)
+    {
+        return $this;
+    }
+}
