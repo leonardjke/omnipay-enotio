@@ -10,6 +10,8 @@ class NotificationRequest extends AbstractRequest implements NotificationInterfa
 {
     use Parametrable;
 
+    public const SIGN_ERROR = 'sign_error';
+
     protected $data;
 
     /**
@@ -43,9 +45,13 @@ class NotificationRequest extends AbstractRequest implements NotificationInterfa
     /**
      * @inheritDoc
      */
-    public function getMessage(): string
+    public function getMessage(): ?string
     {
-        return '';
+        if (!$this->isValid()) {
+            return self::SIGN_ERROR;
+        }
+
+        return null;
     }
 
     public function isValid(): bool
@@ -62,7 +68,7 @@ class NotificationRequest extends AbstractRequest implements NotificationInterfa
             $this->getDataItem('merchant_id'),
         ];
 
-        return hash('sha1', implode("&", $params));
+        return hash('md5', implode(":", $params));
     }
 
     public function getMerchantId()
